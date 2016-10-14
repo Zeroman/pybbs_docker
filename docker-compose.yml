@@ -18,7 +18,7 @@ services:
     - data
     command: --character-set-server=utf8
     environment:
-    - MYSQL_ROOT_PASSWORD=toor
+    - MYSQL_ROOT_PASSWORD=123123
 
   data:
     image: mysql:5.7
