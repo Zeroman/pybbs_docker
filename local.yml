@@ -1,0 +1,32 @@
+version: '2'
+
+services:
+  redis:
+    restart: always
+    image: redis:3-alpine
+    volumes:
+    - ./data/redis:/data:Z
+    ports:
+    - "6379:6379"
+
+  mysql:
+    restart: always
+    image: mysql:5.7
+    volumes:
+    - ./data/mysql:/var/lib/mysql:Z
+    - ./init_sql.sh:/docker-entrypoint-initdb.d/10-init_sql.sh
+    - ./pybbs/pybbs.sql:/pybbs.sql
+    volumes_from:
+    - data
+    ports:
+    - "3306:3306"
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+    - MYSQL_ROOT_PASSWORD=toor
+
+  data:
+    image: mysql:5.7
+    volumes:
+    - ./data/init/:/init/
+    command: mkdir -m 0777 /init/mysql
+
