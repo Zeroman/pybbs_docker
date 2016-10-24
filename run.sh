@@ -78,6 +78,16 @@ start_pybbs()
             catalina.sh run
         fi
     else
+        if [ ! -d pybbs-jfinal ];then
+            init_source
+        fi
+        if [ ! -e pybbs-jfinal/target/pybbs.war ];then
+            maven_build_in_docker pybbs-jfinal
+        fi
+        if [ ! -e pybbs-jfinal/target/pybbs.war ];then
+            echo "please try again, can not find pybbs-jfinal/target/pybbs.war"
+            exit 1
+        fi
         check_docker
         init_docker
         $DC up -d
@@ -88,6 +98,18 @@ maven_build_in_docker()
 {
     local prj_path=$1
     local m2_path=$PWD/m2
+
+    local label
+
+    label=$(docker images -q maven)
+    if [ -z "$label" ];then
+        docker pull maven
+    fi
+    label=$(docker images -q maven)
+    if [ -z "$label" ];then
+        echo "please pull image maven manually or try again."
+        exit 1
+    fi
 
     prj_path=$(readlink -f $prj_path)
 
@@ -100,41 +122,42 @@ maven_build_in_docker()
     fi
 }
 
-init_docker
+init_source()
+{
+    if [ ! -d pybbs-jfinal ];then
+        git clone --depth 1 -b v2.3 https://github.com/tomoya92/pybbs.git pybbs-jfinal
+    fi
+    sed -i 's#mysql://localhost#mysql://mysql#g' ./pybbs-jfinal/src/main/resources/config.properties
+    sed -i 's#redis.host=.*$#redis.host=redis#g'  ./pybbs-jfinal/src/main/resources/config.properties
+}
 
-case "$1" in
-    init)
-        if [ ! -d pybbs ];then
-            git clone --depth 1 -b v2.3 https://github.com/tomoya92/pybbs.git
-        fi
-        sed -i 's#mysql://localhost#mysql://mysql#g' ./pybbs/src/main/resources/config.properties
-        sed -i 's#redis.host=.*$#redis.host=redis#g'  ./pybbs/src/main/resources/config.properties
-        ;;
-    pack)
-        tar --transform 's,^,docker-pybbs/,' -czvf docker-pybbs.tar.gz \
-            run.sh init_sql.sh \
-            pybbs.sql \
-            target/pybbs.war \
-            tomcat-users.xml server.xml \
-            docker-compose.yml \
-            docker_img.tar
-        ;;
-    pack_debug)
-        tar -czvf debug.tar.gz --exclude target/pybbs/static/upload \
-            run.sh init_sql.sh \
-            pybbs.sql \
-            tomcat-users.xml server.xml \
-            debug.yml \
-            target/pybbs
-        ;;
-    pd|pack_docker)
+pack_release_files()
+{
+    if [ ! -e docker_img.tar ];then
         images=$(grep image docker-compose.yml | sed 's/image://g'  | uniq | xargs)
         echo "packing $images ..."
         docker save -o docker_img.tar $images
         ls -lh docker_img.tar
+    fi
+
+    tar --transform 's,^,docker-pybbs/,' -czvf docker-pybbs-jfinal.tar.gz \
+        run.sh init_sql.sh \
+        pybbs-jfinal/pybbs.sql \
+        pybbs-jfinal/target/pybbs.war \
+        tomcat-users.xml server.xml \
+        docker-compose.yml \
+        docker_img.tar
+}
+
+init_docker
+
+opt=$1
+case "$opt" in
+    init)
+        init_source 
         ;;
-    id|import_docker)
-        docker load -i docker_img.tar
+    pack)
+        pack_release_files
         ;;
     c|clean)
         $DC stop
@@ -142,15 +165,12 @@ case "$1" in
         docker network rm pybbs-default
         sudo rm -rf data/
         ;;
-    r|run)
-        start_pybbs
-        ;;
     b|build)
-        cd pybbs
+        cd pybbs-jfinal
         mvn clean install
         ;;
     bd|build_in_docker)
-        maven_build_in_docker pybbs
+        maven_build_in_docker pybbs-jfinal
         ;;
     stop)
         $DC stop
@@ -163,6 +183,11 @@ case "$1" in
     l|log)
         $DC logs -f
         ;;
+    r|run)
+        rm -rf data/init/debug
+        init_docker
+        start_pybbs
+        ;;
     d|debug)
         mkdir -p data/init/debug
         init_docker
@@ -171,7 +196,7 @@ case "$1" in
     uc|update_class)
         # maven compiler
         # maven war:exploded
-        rsync -ah --info=name,misc1,flist0 target/classes/ target/pybbs/WEB-INF/classes
+        rsync -ah --info=name,misc1,flist0 pybbs-jfinal/target/classes/ pybbs-jfinal/target/pybbs/WEB-INF/classes
         ;;
     *)
         start_pybbs

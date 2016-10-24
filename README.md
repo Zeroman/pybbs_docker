@@ -1,14 +1,17 @@
-docker环境一键部署pybbs
+docker环境一键部署pybbs-jfinal
 ================
 
 
-1. 初始化
-```bash
-# 自动下载pybbs源代码
-# 修改src/main/resources/config.properties,
-# 配置mysql服务器和redis服务器
+1. 一键启动
 
-./run.sh init
+脚本主要步骤
+- 下载pybbs-jfinal源代码,修改src/main/resources/config.properties,
+- 进入docker maven镜像进行编译，如果本机没有maven镜像，自动下载docker镜像
+- 配置mysql服务器和redis服务器，自动初始化数据库脚本
+- 启动tomcat
+
+```bash
+./run.sh 
 
 ```
 
@@ -29,7 +32,7 @@ docker环境一键部署pybbs
 2. 调试运行
 
 - 运行的前提是docker正确安装
-- 在tomcat里面运行的目录是pybbs/target/pybbs
+- 在tomcat里面运行的目录是pybbs-jfinal/target/pybbs
 - 调试直接远程本地8000端口即可
 ```bash
 ./run.sh d

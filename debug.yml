@@ -13,7 +13,7 @@ services:
     volumes:
     - ./data/mysql:/var/lib/mysql:Z
     - ./init_sql.sh:/docker-entrypoint-initdb.d/10-init_sql.sh
-    - ./pybbs/pybbs.sql:/pybbs.sql
+    - ./pybbs-jfinal/pybbs.sql:/pybbs.sql
     volumes_from:
     - data
     ports:
@@ -45,7 +45,7 @@ services:
     volumes:
     - ./server.xml:/usr/local/tomcat/conf/server.xml:Z
     - ./tomcat-users.xml:/usr/local/tomcat/conf/tomcat-users.xml:Z
-    - ./pybbs/target/pybbs:/usr/local/tomcat/webapps/ROOT
+    - ./pybbs-jfinal/target/pybbs:/usr/local/tomcat/webapps/ROOT
     - ./run.sh:/usr/local/tomcat/bin/run.sh
     command: run.sh
 
