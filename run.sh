@@ -105,7 +105,7 @@ init_docker
 case "$1" in
     init)
         if [ ! -d pybbs ];then
-            git clone --depth 1 https://github.com/tomoya92/pybbs.git
+            git clone --depth 1 -b v2.3 https://github.com/tomoya92/pybbs.git
         fi
         sed -i 's#mysql://localhost#mysql://mysql#g' ./pybbs/src/main/resources/config.properties
         sed -i 's#redis.host=.*$#redis.host=redis#g'  ./pybbs/src/main/resources/config.properties
